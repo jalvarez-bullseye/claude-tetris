@@ -48,7 +48,20 @@ const CHALLENGE_CHANCE = 0.06;
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
-const GRID_COLORS = { light: '#d8d8e8', dark: '#22222e' };
+const GRID_COLORS = {
+  normal: { light: '#d8d8e8', dark: '#22222e' },
+  vivid: { light: '#f0d9cf', dark: '#2e2018' },
+  neon: { light: '#e4d4f7', dark: '#2a1050' },
+  retro: { light: '#e8dcae', dark: '#3a2a00' },
+};
+const GRID_LINE_WIDTH = { normal: 0.5, vivid: 0.5, neon: 0.6, retro: 1 };
+
+const SKINS = [
+  { id: 'normal', label: 'Normal', icon: '🎨' },
+  { id: 'vivid', label: 'Vívido', icon: '🌈' },
+  { id: 'neon', label: 'Neón', icon: '💜' },
+  { id: 'retro', label: 'Retro', icon: '🕹️' },
+];
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -62,6 +75,7 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggleBtn = document.getElementById('theme-toggle');
+const skinToggleBtn = document.getElementById('skin-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending;
 
@@ -77,6 +91,25 @@ function initTheme() {
 
 function toggleTheme() {
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+}
+
+function applySkin(skinId) {
+  const skin = SKINS.find(s => s.id === skinId) || SKINS[0];
+  document.documentElement.dataset.skin = skin.id;
+  skinToggleBtn.textContent = skin.icon;
+  skinToggleBtn.title = `Estilo: ${skin.label} (clic para cambiar)`;
+  localStorage.setItem('skin', skin.id);
+}
+
+function initSkin() {
+  const saved = localStorage.getItem('skin');
+  applySkin(SKINS.some(s => s.id === saved) ? saved : 'normal');
+}
+
+function cycleSkin() {
+  const currentId = document.documentElement.dataset.skin || 'normal';
+  const idx = SKINS.findIndex(s => s.id === currentId);
+  applySkin(SKINS[(idx + 1) % SKINS.length].id);
 }
 
 function createBoard() {
@@ -212,19 +245,33 @@ function updateHUD() {
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
   const color = COLORS[colorIndex];
+  const skin = document.documentElement.dataset.skin || 'normal';
   context.globalAlpha = alpha ?? 1;
+
+  if (skin === 'neon') {
+    context.shadowColor = color;
+    context.shadowBlur = 10;
+  }
   context.fillStyle = color;
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  if (skin === 'neon') context.shadowBlur = 0;
+
+  if (skin === 'retro') {
+    context.strokeStyle = 'rgba(0,0,0,0.4)';
+    context.lineWidth = 1;
+    context.strokeRect(x * size + 1.5, y * size + 1.5, size - 3, size - 3);
+  } else {
+    context.fillStyle = skin === 'vivid' ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.12)';
+    context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  }
   context.globalAlpha = 1;
 }
 
 function drawGrid() {
   const theme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
-  ctx.strokeStyle = GRID_COLORS[theme];
-  ctx.lineWidth = 0.5;
+  const skin = document.documentElement.dataset.skin || 'normal';
+  ctx.strokeStyle = GRID_COLORS[skin][theme];
+  ctx.lineWidth = GRID_LINE_WIDTH[skin];
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
     ctx.moveTo(c * BLOCK, 0);
@@ -356,6 +403,8 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 themeToggleBtn.addEventListener('click', toggleTheme);
+skinToggleBtn.addEventListener('click', cycleSkin);
 
 initTheme();
+initSkin();
 init();

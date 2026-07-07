@@ -14,6 +14,7 @@
   --restart-bg: #3b5bdb;
   --restart-fg: #ffffff;
   --restart-hover-bg: #5b7ff5;
+  --board-glow: rgba(0, 0, 0, 0.15);
 }
 
 :root[data-theme="dark"] {
@@ -32,6 +33,53 @@
   --restart-bg: #7aa2f7;
   --restart-fg: #0f0f17;
   --restart-hover-bg: #9bbdff;
+  --board-glow: rgba(0, 0, 0, 0.15);
+}
+
+/* ---- Estilos visuales (skins), independientes del tema claro/oscuro ---- */
+:root[data-skin="vivid"] {
+  --label-color: #d6336c;
+  --value-color: #ff6b35;
+  --kbd-color: #ff6b35;
+  --border: #ffb199;
+  --overlay-title-color: #e8590c;
+  --restart-bg: #ff6b35;
+  --restart-fg: #ffffff;
+  --restart-hover-bg: #ff8c5c;
+  --board-glow: rgba(255, 107, 53, 0.25);
+}
+
+:root[data-skin="neon"] {
+  --label-color: #ff2fd0;
+  --value-color: #00f0ff;
+  --kbd-color: #00f0ff;
+  --border: #7b2ff7;
+  --overlay-title-color: #ff2fd0;
+  --restart-bg: #7b2ff7;
+  --restart-fg: #ffffff;
+  --restart-hover-bg: #a15bff;
+  --board-glow: rgba(123, 47, 247, 0.55);
+}
+
+:root[data-skin="retro"] {
+  --label-color: #ffb000;
+  --value-color: #ffb000;
+  --kbd-color: #ffb000;
+  --border: #6b4a00;
+  --overlay-title-color: #ff5f1f;
+  --restart-bg: #ffb000;
+  --restart-fg: #060604;
+  --restart-hover-bg: #ffc94d;
+  --board-glow: rgba(255, 176, 0, 0.35);
+}
+
+:root[data-skin="neon"] .value,
+:root[data-skin="neon"] #overlay-title {
+  text-shadow: 0 0 8px currentColor;
+}
+
+:root[data-skin="retro"] .label {
+  letter-spacing: 3px;
 }
 
 *, *::before, *::after {
@@ -67,7 +115,7 @@ body {
   border: 1px solid var(--border);
   background: var(--board-bg);
   border-radius: 4px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 40px var(--board-glow);
 }
 
 /* ---- Panel lateral ---- */
@@ -107,9 +155,13 @@ body {
   border-radius: 4px;
 }
 
-/* ---- Toggle de tema ---- */
-#theme-toggle {
-  align-self: flex-start;
+/* ---- Botones de tema/estilo ---- */
+.button-row {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
   background: var(--kbd-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -121,7 +173,7 @@ body {
   transition: background 0.15s;
 }
 
-#theme-toggle:hover {
+.icon-btn:hover {
   background: var(--kbd-border);
 }
 
