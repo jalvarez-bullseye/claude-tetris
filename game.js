@@ -67,6 +67,9 @@ const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
 const nextCtx = nextCanvas.getContext('2d');
+const holdCanvas = document.getElementById('hold-canvas');
+const holdCtx = holdCanvas.getContext('2d');
+const holdSection = document.getElementById('hold-section');
 const scoreEl = document.getElementById('score');
 const linesEl = document.getElementById('lines');
 const levelEl = document.getElementById('level');
@@ -77,7 +80,7 @@ const restartBtn = document.getElementById('restart-btn');
 const themeToggleBtn = document.getElementById('theme-toggle');
 const skinToggleBtn = document.getElementById('skin-toggle');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending;
+let board, current, next, hold, holdUsed, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending;
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -125,6 +128,11 @@ function pickType() {
   return STANDARD_TYPES[Math.floor(Math.random() * STANDARD_TYPES.length)];
 }
 
+function pieceFromType(type) {
+  const shape = PIECES[type].map(row => [...row]);
+  return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
 function randomPiece() {
   let type;
   if (rewardPending) {
@@ -133,8 +141,7 @@ function randomPiece() {
   } else {
     type = pickType();
   }
-  const shape = PIECES[type].map(row => [...row]);
-  return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+  return pieceFromType(type);
 }
 
 function collide(shape, ox, oy) {
@@ -224,6 +231,7 @@ function softDrop() {
 function lockPiece() {
   merge();
   clearLines();
+  holdUsed = false;
   spawn();
 }
 
@@ -234,6 +242,25 @@ function spawn() {
     endGame();
   }
   drawNext();
+  drawHold();
+}
+
+function holdPiece() {
+  if (holdUsed) return;
+  if (hold === null) {
+    hold = current.type;
+    holdUsed = true;
+    spawn();
+  } else {
+    const incomingType = hold;
+    hold = current.type;
+    current = pieceFromType(incomingType);
+    if (collide(current.shape, current.x, current.y)) {
+      endGame();
+    }
+    holdUsed = true;
+    drawHold();
+  }
 }
 
 function updateHUD() {
@@ -319,6 +346,20 @@ function drawNext() {
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
 
+function drawHold() {
+  const HB = 30;
+  holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+  if (hold !== null) {
+    const shape = PIECES[hold];
+    const offX = Math.floor((4 - shape[0].length) / 2);
+    const offY = Math.floor((4 - shape.length) / 2);
+    for (let r = 0; r < shape.length; r++)
+      for (let c = 0; c < shape[r].length; c++)
+        drawBlock(holdCtx, offX + c, offY + r, shape[r][c], HB);
+  }
+  holdSection.classList.toggle('dimmed', holdUsed);
+}
+
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
@@ -367,6 +408,8 @@ function init() {
   dropInterval = 1000;
   dropAccum = 0;
   rewardPending = false;
+  hold = null;
+  holdUsed = false;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
@@ -396,6 +439,11 @@ document.addEventListener('keydown', e => {
     case 'Space':
       e.preventDefault();
       hardDrop();
+      break;
+    case 'KeyC':
+    case 'ShiftLeft':
+    case 'ShiftRight':
+      holdPiece();
       break;
   }
   updateHUD();
