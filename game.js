@@ -13,6 +13,11 @@ const COLORS = [
   '#e57373', // Z - red
   '#7986cb', // J - indigo
   '#ffb74d', // L - orange
+  '#f06292', // + pentomino - pink
+  '#4db6ac', // U pentomino - teal
+  '#dce775', // Y pentomino - lime
+  '#ffd700', // single block - gold (Tetris reward)
+  '#8d6e63', // 3x3 hollow - brown (challenge)
 ];
 
 const PIECES = [
@@ -24,7 +29,22 @@ const PIECES = [
   [[5,5,0],[0,5,5],[0,0,0]],                  // Z
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
+  [[0,8,0],[8,8,8],[0,8,0]],                  // + pentomino
+  [[9,0,9],[9,9,9]],                            // U pentomino
+  [[0,10],[10,10],[0,10],[0,10]],             // Y pentomino
+  [[11]],                                      // single block (Tetris reward)
+  [[12,12,12],[12,0,12],[12,12,12]],          // 3x3 hollow (challenge)
 ];
+
+// Non-standard pieces: STANDARD_TYPES spawn normally; PENTOMINO_TYPES and
+// CHALLENGE_TYPE appear occasionally at random; REWARD_TYPE only spawns via
+// the Tetris-reward flag set in clearLines(), never through random draw.
+const STANDARD_TYPES = [1, 2, 3, 4, 5, 6, 7];
+const PENTOMINO_TYPES = [8, 9, 10];
+const CHALLENGE_TYPE = 12;
+const REWARD_TYPE = 11;
+const PENTOMINO_CHANCE = 0.12;
+const CHALLENGE_CHANCE = 0.06;
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -43,7 +63,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggleBtn = document.getElementById('theme-toggle');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, rewardPending;
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -63,8 +83,23 @@ function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
 }
 
+function pickType() {
+  const roll = Math.random();
+  if (roll < CHALLENGE_CHANCE) return CHALLENGE_TYPE;
+  if (roll < CHALLENGE_CHANCE + PENTOMINO_CHANCE) {
+    return PENTOMINO_TYPES[Math.floor(Math.random() * PENTOMINO_TYPES.length)];
+  }
+  return STANDARD_TYPES[Math.floor(Math.random() * STANDARD_TYPES.length)];
+}
+
 function randomPiece() {
-  const type = Math.floor(Math.random() * 7) + 1;
+  let type;
+  if (rewardPending) {
+    type = REWARD_TYPE;
+    rewardPending = false;
+  } else {
+    type = pickType();
+  }
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -123,6 +158,7 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
+    if (cleared === 4) rewardPending = true;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
@@ -283,6 +319,7 @@ function init() {
   gameOver = false;
   dropInterval = 1000;
   dropAccum = 0;
+  rewardPending = false;
   lastTime = performance.now();
   next = randomPiece();
   spawn();

@@ -26,8 +26,9 @@ There is no build, lint, or test tooling in this repo.
 
 Everything lives in `game.js` (~300 lines) as top-level state and functions — no classes, no modules.
 
-- **Board model**: `board` is a `ROWS × COLS` matrix where each cell is `0` (empty) or a piece color index (1–7).
-- **Pieces**: `PIECES` defines the 7 tetrominoes as square matrices. Rotation is done via matrix transpose+reverse in `rotateCW`, not by storing pre-rotated states.
+- **Board model**: `board` is a `ROWS × COLS` matrix where each cell is `0` (empty) or a piece color index (1–12).
+- **Pieces**: `PIECES` defines the 7 standard tetrominoes (types 1–7) plus 5 non-standard pieces (types 8–12): `+`, `U`, and `Y` pentominoes, a `1×1` single block, and a hollow `3×3`. Rotation is done via matrix transpose+reverse in `rotateCW`, not by storing pre-rotated states; it works on any rectangular shape, not just 4×4/3×3 tetromino grids.
+- **Piece selection** (`pickType`, `randomPiece`): the `+`/`U`/`Y` pentominoes and the hollow `3×3` spawn at random with low odds (`PENTOMINO_CHANCE`, `CHALLENGE_CHANCE`); the `1×1` single never spawns randomly — it's forced as the next piece via the `rewardPending` flag, which `clearLines()` sets when a Tetris (4 lines at once) is cleared.
 - **Collision** (`collide`): checks board bounds and overlap with locked cells; used for movement, rotation, and ghost-piece projection.
 - **Wall kicks** (`tryRotate`): after rotating, tries offsets `[0, -1, 1, -2, 2]` until a non-colliding position is found.
 - **Game loop** (`loop`): driven by `requestAnimationFrame`; accumulates elapsed time in `dropAccum` and advances the piece one row once `dropInterval` is exceeded.
@@ -40,7 +41,7 @@ Control flow: `init()` resets all state → `spawn()` promotes `next` to `curren
 
 ## Tunable constants (top of `game.js`)
 
-`COLS`, `ROWS`, `BLOCK`, `COLORS`, `LINE_SCORES`, initial `dropInterval`. If `COLS`/`ROWS`/`BLOCK` change, update the `<canvas id="board">` `width`/`height` in `index.html` to match (`COLS × BLOCK`, `ROWS × BLOCK`).
+`COLS`, `ROWS`, `BLOCK`, `COLORS`, `LINE_SCORES`, initial `dropInterval`, `PENTOMINO_CHANCE`, `CHALLENGE_CHANCE`. If `COLS`/`ROWS`/`BLOCK` change, update the `<canvas id="board">` `width`/`height` in `index.html` to match (`COLS × BLOCK`, `ROWS × BLOCK`).
 
 ## CI
 
